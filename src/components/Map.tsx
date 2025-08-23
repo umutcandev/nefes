@@ -22,7 +22,9 @@ export default function Map({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const userLocationMarker = useRef<maplibregl.Marker | null>(null);
+  const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null);
   const initialLocationSet = useRef(false); // İlk konum ayarlandığında `true` olacak
+  const [currentPosition, setCurrentPosition] = useState<{lat: number, lng: number} | null>(null);
   const [API_KEY] = useState(process.env.NEXT_PUBLIC_MAPTILER_API_KEY);
   const [STYLE_URL] = useState(process.env.NEXT_PUBLIC_MAPTILER_STYLE_URL);
 
@@ -70,8 +72,8 @@ export default function Map({
     // Navigation controls ekle
     map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Geolocate control ekle
-    map.current.addControl(new maplibregl.GeolocateControl({
+    // Geolocate control oluştur ve referansını sakla
+    geolocateControl.current = new maplibregl.GeolocateControl({
       positionOptions: {
         enableHighAccuracy: true
       },
@@ -80,27 +82,61 @@ export default function Map({
         maxZoom: 16, // Maximum zoom seviyesi, daha yumuşak bir geçiş için optimize edildi
         duration: 2500, // Animasyon süresi (ms)
       },
-      showAccuracyCircle: true, // Doğruluk çemberini göster
-      showUserLocation: true // Kullanıcı konumu noktasını göster
-    }), 'top-right');
+      showAccuracyCircle: false, // Custom marker kullandığımız için doğruluk çemberini gizle
+      showUserLocation: false // Custom marker kullandığımız için varsayılan marker'ı gizle
+    });
+
+    // Geolocate control event'lerini dinle
+    geolocateControl.current.on('geolocate', (position: GeolocationPosition) => {
+      const { latitude: lat, longitude: lng } = position.coords;
+      setCurrentPosition({ lat, lng });
+      console.log('GeolocationControl - Yeni konum:', lat, lng);
+    });
+
+    geolocateControl.current.on('trackuserlocationstart', () => {
+      console.log('GeolocationControl - Konum takibi başladı');
+    });
+
+    geolocateControl.current.on('trackuserlocationend', () => {
+      console.log('GeolocationControl - Konum takibi durdu');
+    });
+
+    geolocateControl.current.on('error', (error) => {
+      console.error('GeolocationControl - Hata:', error);
+    });
+
+    // Control'ü haritaya ekle
+    map.current.addControl(geolocateControl.current, 'top-right');
 
   }, [API_KEY, STYLE_URL, showUserLocation, latitude, longitude, zoom]); // Yalnızca başlangıçta çalışacak bağımlılıklar
 
 
-  // Kullanıcı konumu marker'ını yöneten effect
+  // Kullanıcı konumu marker'ını yöneten effect - props'tan gelen koordinatlar için
   useEffect(() => {
-    if (!map.current) return; // Harita hazır değilse çık
+    if (!map.current || !showUserLocation) return;
 
-    // Geçerli koordinat yoksa ve kullanıcı konumu gösteriliyorsa, marker'ı kaldırma
-    if (showUserLocation && (!longitude || !latitude)) {
+    // İlk başlangıç koordinatları için marker oluştur
+    if (!currentPosition && longitude && latitude && longitude !== 29.1244 && latitude !== 40.9128) {
+      setCurrentPosition({ lat: latitude, lng: longitude });
+    }
+  }, [longitude, latitude, showUserLocation, currentPosition]);
+
+  // GeolocationControl'den gelen güncellemeler ve props'tan gelen başlangıç koordinatları için marker yönetimi
+  useEffect(() => {
+    if (!map.current || !showUserLocation) return;
+
+    const effectivePosition = currentPosition || (longitude && latitude && longitude !== 29.1244 && latitude !== 40.9128 ? { lat: latitude, lng: longitude } : null);
+    
+    if (!effectivePosition) {
+      // Marker'ı kaldır
       if (userLocationMarker.current) {
         userLocationMarker.current.remove();
         userLocationMarker.current = null;
       }
-      initialLocationSet.current = false; // Konum kaybolursa sıfırla
+      initialLocationSet.current = false;
       return;
     }
-    
+
     // Yeni marker elementi oluştur
     const el = document.createElement('div');
     el.className = 'user-location-marker';
@@ -108,33 +144,25 @@ export default function Map({
 
     // Eğer marker zaten varsa, sadece pozisyonunu güncelle
     if (userLocationMarker.current) {
-      userLocationMarker.current.setLngLat([longitude, latitude]);
+      userLocationMarker.current.setLngLat([effectivePosition.lng, effectivePosition.lat]);
+      console.log('Marker pozisyonu güncellendi:', effectivePosition.lat, effectivePosition.lng);
     } else {
       // Yeni marker oluştur
       userLocationMarker.current = new maplibregl.Marker({
         element: el,
         anchor: 'center'
       })
-        .setLngLat([longitude, latitude])
+        .setLngLat([effectivePosition.lng, effectivePosition.lat])
         .addTo(map.current);
-    }
-    
-    // Haritayı yeni merkeze uçur (sadece ilk konum ayarlandıktan sonra)
-    if (showUserLocation && initialLocationSet.current) {
-        map.current.flyTo({
-          center: [longitude, latitude],
-          zoom: Math.max(map.current.getZoom(), 15), // Mevcut zoom'u koru veya 15'e yakınlaş
-          duration: 2500, // Animasyon süresini uzat
-          essential: true // Kullanıcı etkileşimi sırasında bile animasyonun tamamlanmasını sağla
-        });
+      console.log('Yeni marker oluşturuldu:', effectivePosition.lat, effectivePosition.lng);
     }
 
     // İlk konumun ayarlandığını işaretle
-    if (showUserLocation && !initialLocationSet.current) {
+    if (!initialLocationSet.current) {
       initialLocationSet.current = true;
     }
 
-  }, [longitude, latitude, showUserLocation]);
+  }, [currentPosition, longitude, latitude, showUserLocation]);
 
 
   // Component unmount olduğunda haritayı temizle

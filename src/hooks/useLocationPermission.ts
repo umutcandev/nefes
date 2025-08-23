@@ -9,6 +9,7 @@ interface LocationPermissionState {
   error: string | null;
   loading: boolean;
   permissionState: 'granted' | 'denied' | 'prompt' | 'unknown';
+  isWatching: boolean;
 }
 
 const STORAGE_KEY = 'nefes_location_permission';
@@ -77,9 +78,11 @@ export const useLocationPermission = () => {
     error: null,
     loading: false,
     permissionState: 'unknown',
+    isWatching: false,
   });
   
   const [isHydrated, setIsHydrated] = useState(false);
+  const [watchId, setWatchId] = useState<number | null>(null);
 
   // İzin durumunu kontrol et
   const checkPermissionState = async (): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> => {
@@ -136,6 +139,73 @@ export const useLocationPermission = () => {
     });
   };
 
+  // Canlı konum takibini başlat
+  const startWatching = useCallback(() => {
+    if (!navigator.geolocation || watchId !== null) return;
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000, // 10 saniye cache
+    };
+
+    const handleSuccess = (position: GeolocationPosition) => {
+      const newState = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        error: null,
+        loading: false,
+        permissionState: 'granted' as const,
+        isWatching: true,
+      };
+      
+      setState(newState);
+      saveToStorage(newState);
+      console.log('Canlı konum güncellendi:', newState.latitude, newState.longitude);
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      let errorMessage = 'Konum takibi hatası';
+      
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          errorMessage = 'Konum izni reddedildi.';
+          stopWatching();
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMessage = 'Konum bilgisi mevcut değil.';
+          break;
+        case error.TIMEOUT:
+          errorMessage = 'Konum alma işlemi zaman aşımına uğradı.';
+          break;
+        default:
+          errorMessage = 'Bilinmeyen bir hata oluştu.';
+          break;
+      }
+      
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        loading: false,
+      }));
+    };
+
+    const id = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+    setWatchId(id);
+    
+    setState(prev => ({ ...prev, isWatching: true }));
+  }, [watchId]);
+
+  // Canlı konum takibini durdur
+  const stopWatching = useCallback(() => {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
+    }
+    setState(prev => ({ ...prev, isWatching: false }));
+  }, [watchId]);
+
   // İzin iste ve konum al
   const requestPermission = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -164,10 +234,14 @@ export const useLocationPermission = () => {
         error: null,
         loading: false,
         permissionState: 'granted' as const,
+        isWatching: false,
       };
       
       setState(newState);
       saveToStorage(newState);
+
+      // İzin verildikten sonra canlı takibi başlat
+      startWatching();
 
     } catch (error: unknown) {
       const newPermissionState = await checkPermissionState();
@@ -182,7 +256,7 @@ export const useLocationPermission = () => {
         permissionState: newPermissionState,
       }));
     }
-  }, []);
+  }, [startWatching]);
 
   // Hydration tamamlandığında localStorage'dan veri yükle
   useEffect(() => {
@@ -257,6 +331,7 @@ export const useLocationPermission = () => {
   }, [isHydrated, state.latitude, requestPermission]);
 
   const clearPermissions = () => {
+    stopWatching(); // Konum takibini durdur
     clearStorage();
     setState({
       latitude: null,
@@ -265,12 +340,24 @@ export const useLocationPermission = () => {
       error: null,
       loading: false,
       permissionState: 'unknown',
+      isWatching: false,
     });
   };
+
+  // Component unmount olduğunda konum takibini temizle
+  useEffect(() => {
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [watchId]);
 
   return {
     ...state,
     requestPermission,
     clearPermissions,
+    startWatching,
+    stopWatching,
   };
 };
