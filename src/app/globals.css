@@ -171,12 +171,36 @@
   @apply bg-gray-100;
 }
 
+/* Mobil cihazlarda harita kontrollerini üst alanda konumlandır */
+@media (max-width: 767px) {
+  .maplibregl-ctrl-top-right {
+    top: 1rem !important;
+    right: 1rem !important;
+    /* Floating box'ın arkasında kalmaması için z-index artır */
+    z-index: 20 !important;
+  }
+  
+  .maplibregl-ctrl-top-left {
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 20 !important;
+  }
+  
+  .maplibregl-ctrl-bottom-right,
+  .maplibregl-ctrl-bottom-left {
+    /* Alt kontrolleri gizle veya üste taşı */
+    display: none;
+  }
+}
+
 /* Yeni kullanıcı konumu işaretçisi stilleri */
 .user-location-marker {
   position: relative;
   width: 20px;
   height: 20px;
   transform: translate(-50%, -50%);
+  /* Floating box'ın altında kalması için düşük z-index */
+  z-index: 5 !important;
 }
 
 .user-location-marker .dot {
@@ -246,4 +270,61 @@
     transform: translate(-50%, -50%) scale(1.5);
     opacity: 0;
   }
+}
+
+/* Floating Chart Container - Responsive sizing */
+@media (max-width: 640px) {
+  .floating-chart {
+    /* Mobile: Larger for better content visibility */
+    height: 55vh !important;
+    bottom: 1rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    /* Kontrollerin üzerinde ama marker'ların altında */
+    z-index: 15 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .floating-chart {
+    /* Tablet: Medium size with comfortable margins */
+    height: 45vh !important;
+    max-height: 500px;
+    bottom: 1.5rem !important;
+    left: 2rem !important;
+    right: 2rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .floating-chart {
+    /* Desktop: Optimal size, centered with max width */
+    height: 40vh !important;
+    max-height: 450px;
+    max-width: 700px;
+    bottom: 2rem !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+  }
+}
+
+/* Carousel specific styles */
+.carousel-container {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Smooth carousel transitions */
+[data-carousel-content] {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Badge hover effects for quick access */
+.quick-access-badge {
+  transition: all 0.2s ease-in-out;
+}
+
+.quick-access-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

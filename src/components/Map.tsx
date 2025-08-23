@@ -52,10 +52,13 @@ export default function Map({
     // Özel harita style URL'ini kullan
     const styleUrl = STYLE_URL;
 
+    // Harita merkezini ayarla
+    const mapCenter: [number, number] = [longitude, latitude];
+
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
-      center: [longitude, latitude],
+      center: mapCenter,
       zoom: showUserLocation ? 15 : zoom, // Kullanıcı konumu için daha yakın zoom
     });
 
@@ -69,8 +72,9 @@ export default function Map({
       console.error('Harita hatası:', e);
     });
 
-    // Navigation controls ekle
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    // Navigation controls ekle - mobilde üst alanda konumlandır
+    const navigationControl = new maplibregl.NavigationControl();
+    map.current.addControl(navigationControl, 'top-right');
 
     // Geolocate control oluştur ve referansını sakla
     geolocateControl.current = new maplibregl.GeolocateControl({
@@ -81,6 +85,8 @@ export default function Map({
       fitBoundsOptions: {
         maxZoom: 16, // Maximum zoom seviyesi, daha yumuşak bir geçiş için optimize edildi
         duration: 2500, // Animasyon süresi (ms)
+        // Sadece ekranın üst yarısına odaklan
+        padding: { top: 20, bottom: window.innerHeight * 0.6, left: 20, right: 20 }
       },
       showAccuracyCircle: false, // Custom marker kullandığımız için doğruluk çemberini gizle
       showUserLocation: false // Custom marker kullandığımız için varsayılan marker'ı gizle
@@ -91,6 +97,19 @@ export default function Map({
       const { latitude: lat, longitude: lng } = position.coords;
       setCurrentPosition({ lat, lng });
       console.log('GeolocationControl - Yeni konum:', lat, lng);
+      
+      // Konum marker'ını ekranın üst yarısında göstermek için haritayı uygun şekilde hizala
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        // Mobilde floating box'ın altında kalmaması için haritayı biraz yukarı kaydır
+        map.current?.flyTo({
+          center: [lng, lat],
+          zoom: 16,
+          duration: 2000,
+          // Merkezi biraz yukarıya kaydır ki marker üst yarıda kalsın
+          offset: [0, -window.innerHeight * 0.15]
+        });
+      }
     });
 
     geolocateControl.current.on('trackuserlocationstart', () => {
@@ -105,7 +124,7 @@ export default function Map({
       console.error('GeolocationControl - Hata:', error);
     });
 
-    // Control'ü haritaya ekle
+    // Control'ü haritaya ekle - mobilde üst alanda
     map.current.addControl(geolocateControl.current, 'top-right');
 
   }, [API_KEY, STYLE_URL, showUserLocation, latitude, longitude, zoom]); // Yalnızca başlangıçta çalışacak bağımlılıklar
@@ -157,13 +176,61 @@ export default function Map({
       console.log('Yeni marker oluşturuldu:', effectivePosition.lat, effectivePosition.lng);
     }
 
-    // İlk konumun ayarlandığını işaretle
+    // İlk konumun ayarlandığını işaretle ve mobilde merkezi ayarla
     if (!initialLocationSet.current) {
       initialLocationSet.current = true;
+      
+      // Mobil cihazlarda marker'ın ekranın üst yarısında görünmesi için harita merkezini ayarla
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && map.current) {
+        // Haritayı marker'ın üst yarıda kalacağı şekilde ayarla
+        setTimeout(() => {
+          map.current?.flyTo({
+            center: [effectivePosition.lng, effectivePosition.lat],
+            zoom: map.current.getZoom(),
+            duration: 1500,
+            // Merkezi aşağı kaydır ki marker üst yarıda kalsın
+            offset: [0, -window.innerHeight * 0.15]
+          });
+        }, 500);
+      }
     }
 
   }, [currentPosition, longitude, latitude, showUserLocation]);
 
+
+  // Window resize event'ini dinle ve mobil konumlandırmayı güncelle
+  useEffect(() => {
+    const handleResize = () => {
+      if (map.current && currentPosition) {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          // Resize sonrası marker'ın tekrar üst yarıda kalmasını sağla
+          setTimeout(() => {
+            map.current?.flyTo({
+              center: [currentPosition.lng, currentPosition.lat],
+              zoom: map.current.getZoom(),
+              duration: 1000,
+              offset: [0, -window.innerHeight * 0.15]
+            });
+          }, 100);
+        } else {
+          // Desktop'ta merkeze getir
+          setTimeout(() => {
+            map.current?.flyTo({
+              center: [currentPosition.lng, currentPosition.lat],
+              zoom: map.current.getZoom(),
+              duration: 1000,
+              offset: [0, 0]
+            });
+          }, 100);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentPosition]);
 
   // Component unmount olduğunda haritayı temizle
   useEffect(() => {

@@ -93,7 +93,7 @@ export const useLocationPermission = () => {
     try {
       const permission = await navigator.permissions.query({ name: 'geolocation' });
       return permission.state as 'granted' | 'denied' | 'prompt';
-    } catch (_error) {
+    } catch {
       return 'unknown';
     }
   };
@@ -171,7 +171,11 @@ export const useLocationPermission = () => {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           errorMessage = 'Konum izni reddedildi.';
-          stopWatching();
+          // Watch'ı durdur
+          if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            setWatchId(null);
+          }
           break;
         case error.POSITION_UNAVAILABLE:
           errorMessage = 'Konum bilgisi mevcut değil.';
@@ -188,6 +192,7 @@ export const useLocationPermission = () => {
         ...prev,
         error: errorMessage,
         loading: false,
+        isWatching: false,
       }));
     };
 
