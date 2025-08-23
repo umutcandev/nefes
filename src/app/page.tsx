@@ -82,7 +82,7 @@ export default function Home() {
       )}
       
       {/* Floating Chart Container with Carousel */}
-      <div className="floating-chart absolute bottom-4 left-4 right-4 h-[50vh] bg-white rounded-2xl shadow-2xl border border-gray-200 z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 dark:border-gray-700">
+      <div className="floating-chart absolute bottom-0 sm:bottom-4 left-0 sm:left-4 right-0 sm:right-4 h-[50vh] bg-white rounded-2xl shadow-2xl border border-gray-200 z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 dark:border-gray-700">
         <div className="h-full p-3 md:p-4 flex flex-col">
           {/* Chart header */}
           <div className="flex-shrink-0 mb-2">
