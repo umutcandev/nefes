@@ -50,7 +50,7 @@ export const useLocationPermission = () => {
       const options: PositionOptions = {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 0, 
+        maximumAge: 300000, // 5 dakika cache - F5 sonrası tekrar konum istemesin
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -207,14 +207,39 @@ export const useLocationPermission = () => {
         permissionState,
       }));
 
-      // Eğer izin zaten verilmişse otomatik olarak konumu al
+      // Eğer izin zaten verilmişse ve konum bilgisi yoksa konumu al
       if (permissionState === 'granted') {
-        await requestPermission();
+        try {
+          const position = await getCurrentLocation();
+          
+          const newState = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            error: null,
+            loading: false,
+            permissionState: 'granted' as const,
+            isWatching: false,
+          };
+          
+          setState(newState);
+          
+          // İzin verildikten sonra canlı takibi başlat
+          setTimeout(() => startWatching(), 100);
+          
+        } catch (error) {
+          setState(prev => ({
+            ...prev,
+            error: error instanceof Error ? error.message : 'Konum alınamadı',
+            loading: false,
+          }));
+        }
       }
     };
 
     initializePermission();
-  }, [requestPermission]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally empty - only run on mount
 
   // İzin durumu değişikliklerini dinle
   useEffect(() => {
@@ -227,9 +252,34 @@ export const useLocationPermission = () => {
         permissionState: newPermissionState,
       }));
 
-      // İzin verilirse otomatik olarak konumu al
-      if (newPermissionState === 'granted' && !state.latitude) {
-        await requestPermission();
+      // İzin verilirse ve konum bilgisi yoksa konumu al
+      if (newPermissionState === 'granted') {
+        setState(current => {
+          if (!current.latitude && !current.loading) {
+            // Konum bilgisi yoksa al
+            getCurrentLocation()
+              .then(position => {
+                setState(prev => ({
+                  ...prev,
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                  accuracy: position.coords.accuracy,
+                  error: null,
+                  loading: false,
+                }));
+                // Canlı takibi başlat
+                setTimeout(() => startWatching(), 100);
+              })
+              .catch(error => {
+                setState(prev => ({
+                  ...prev,
+                  error: error instanceof Error ? error.message : 'Konum alınamadı',
+                  loading: false,
+                }));
+              });
+          }
+          return current;
+        });
       }
     };
 
@@ -249,7 +299,7 @@ export const useLocationPermission = () => {
         permissionStatus.removeEventListener('change', handlePermissionChange);
       }
     };
-  }, [state.latitude, requestPermission]);
+  }, [startWatching]); // Sadece startWatching dependency'si
 
   const clearPermissions = () => {
     stopWatching(); // Konum takibini durdur

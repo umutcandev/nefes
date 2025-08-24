@@ -17,10 +17,15 @@ Bu uygulama, karmaşık hava kalitesi verilerini sade ve anlaşılır bir arayü
 - Navigasyon ve zoom kontrolleri
 
 ### Veri Görselleştirmesi
-- Anlık hava kalitesi (AQI) değerlerinin görüntülenmesi
-- PM2.5, PM10, Ozon, SO2, NO2 gibi detaylı kirletici verilerinin sunumu
-- Geçmiş 24 saatlik ve 7 günlük veri trendlerinin grafik halinde görselleştirmesi
-- Responsive tasarım ile tüm cihazlarda uyumlu görüntüleme
+- **Anlık AQI Gösterimi** - Gerçek zamanlı hava kalitesi indeksi ve durum bilgisi
+- **İnteraktif Grafikler** - Recharts ile oluşturulmuş modern chart bileşenleri:
+  - LineChart: 24 saatlik AQI trend analizi
+  - BarChart: Kirletici konsantrasyonlarının karşılaştırmalı görünümü
+  - AreaChart: PM2.5 ve PM10 değerlerinin zaman bazlı değişimi
+- **Carousel Navigasyon** - Embla Carousel ile kategoriler arası smooth geçişler
+- **Detaylı Kirletici Analizi** - PM2.5, PM10, NO₂, O₃, SO₂, CO verilerinin görselleştirilmesi
+- **Responsive Design** - Mobil ve desktop için optimize edilmiş chart görünümleri
+- **Real-time Tooltips** - Interaktif veri keşfi için hover/touch tooltip desteği
 
 ### Kullanıcı Deneyimi
 - Şehir ve adres bazlı arama fonksiyonu
@@ -50,15 +55,28 @@ Bu uygulama, karmaşık hava kalitesi verilerini sade ve anlaşılır bir arayü
 - **Vaul 1.1.2** - Mobile-first drawer bileşeni
 - **Geist 1.4.2** - Vercel tarafından tasarlanan modern font ailesi
 
+### Veri Görselleştirme
+- **Recharts 2.15.4** - React için composable grafik kütüphanesi
+  - LineChart, BarChart, AreaChart bileşenleri
+  - Responsive tasarım ve interaktif tooltip desteği
+  - AQI trendleri ve kirletici verilerinin görselleştirilmesi
+- **Embla Carousel React 8.6.0** - Performanslı carousel/slider bileşeni
+  - Touch/swipe desteği ve smooth animasyonlar
+  - Veri kategorileri arasında geçiş için kullanılıyor
+
 ### Yardımcı Kütüphaneler
 - **class-variance-authority** - Tip güvenli CSS varyant yöneticisi
 - **clsx & tailwind-merge** - Dinamik CSS sınıf yönetimi
 - **tw-animate-css** - Tailwind için ek animasyon utilities
 
 ### Custom Hooks
-- **useGeolocation** - Tarayıcı geolocation API'si wrapper
-- **useLocationPermission** - Konum izin durumu yöneticisi
+- **useLocationPermission** - Gelişmiş konum izin durumu yöneticisi
+  - Tarayıcı geolocation API'si entegrasyonu
+  - İzin durumu tracking ve error handling
+  - Otomatik konum güncelleme ve caching
 - **useMediaQuery** - Responsive breakpoint hook
+  - CSS media query'lerin React'ta kullanımı
+  - Dinamik responsive tasarım kontrolü
 
 ### Geliştirme Araçları
 - **ESLint 9** - Kod kalitesi ve stil kontrolü
@@ -66,8 +84,11 @@ Bu uygulama, karmaşık hava kalitesi verilerini sade ve anlaşılır bir arayü
 - **PostCSS** - CSS işleme ve optimizasyon
 
 ### Veri Kaynağı
-- **OpenAQ Platform API** - Küresel hava kalitesi veri sağlayıcısı
-- **Next.js API Routes** - Backend katmanı ve API proxy
+- **Open Meteo Air Quality API** - Ücretsiz hava kalitesi veri sağlayıcısı
+  - European AQI standartlarında gerçek zamanlı veriler
+  - 24 saatlik saatlik tahmin verileri
+  - PM2.5, PM10, NO₂, O₃, SO₂, CO kirletici parametreleri
+- **Next.js API Routes** - Backend katmanı ve veri işleme (opsiyonel)
 
 ## Proje Yapısı
 
@@ -80,6 +101,9 @@ nefes/
 │   │   └── page.tsx             # Ana sayfa bileşeni
 │   ├── components/
 │   │   ├── ui/                  # shadcn/ui temel bileşenleri
+│   │   │   ├── chart.tsx        # Recharts için chart container bileşeni
+│   │   │   ├── carousel.tsx     # Embla carousel bileşeni
+│   │   │   └── ...              # Diğer UI bileşenleri
 │   │   ├── Map.tsx              # MapLibre harita bileşeni
 │   │   └── LocationPermissionDialog.tsx
 │   ├── hooks/
@@ -101,7 +125,6 @@ nefes/
 ### Gereksinimler
 - Node.js 20+
 - Maptiler API anahtarı
-- OpenAQ API anahtarı (opsiyonel)
 
 ### Adımlar
 
@@ -120,7 +143,7 @@ npm install
 ```env
 NEXT_PUBLIC_MAPTILER_API_KEY=your_maptiler_api_key
 NEXT_PUBLIC_MAPTILER_STYLE_URL=your_maptiler_style_url
-OPENAQ_API_KEY=your_openaq_api_key
+# Open Meteo API ücretsizdir, anahtar gerekmez
 ```
 
 4. Geliştirme sunucusunu başlatın:
@@ -148,8 +171,12 @@ npm run lint
 ### Maptiler Integration
 Proje, harita görselleştirmesi için Maptiler servisini kullanır. Custom stil URL'leri ve API anahtarı konfigürasyonu desteklenir.
 
-### OpenAQ Platform
-Hava kalitesi verileri için OpenAQ API'si kullanılır. Gerçek zamanlı ve geçmiş veriler Next.js API routes üzerinden proxy edilir.
+### Open Meteo Air Quality API
+Hava kalitesi verileri için Open Meteo API'si kullanılır:
+- Ücretsiz ve API anahtarı gerektirmez
+- European AQI standartlarında saatlik veriler
+- CORS desteği ile doğrudan frontend entegrasyonu
+- Gerçek zamanlı ve 24 saatlik tahmin verileri
 
 ## Katkıda Bulunma
 

@@ -272,50 +272,6 @@
   }
 }
 
-/* Floating Chart Container - Responsive sizing */
-@media screen and (max-width: 767px) {
-  .floating-chart {
-    /* Mobile: Ekranın alt kısmında, kenarlardan boşluklu */
-    height: 50vh !important;
-    /* Mobil cihazlarda daha fazla alt boşluk - Android navigation bar için */
-    bottom: 5rem !important;
-    left: 1rem !important;
-    right: 1rem !important;
-    width: calc(100vw - 2rem) !important;
-    margin: 0 !important;
-    /* Kontrollerin üzerinde ama marker'ların altında */
-    z-index: 15 !important;
-    /* Tüm köşeleri yuvarla - artık ekranın kenarlarına yapışmıyor */
-    border-radius: 1.5rem !important;
-    /* Box shadow ile daha belirgin hale getir */
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .floating-chart {
-    /* Tablet: Medium size with comfortable margins */
-    height: 45vh !important;
-    max-height: 500px;
-    bottom: 1.5rem !important;
-    left: 2rem !important;
-    right: 2rem !important;
-  }
-}
-
-@media (min-width: 1024px) {
-  .floating-chart {
-    /* Desktop: Optimal size, centered with max width */
-    height: 40vh !important;
-    max-height: 450px;
-    max-width: 700px;
-    bottom: 2rem !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%);
-  }
-}
-
 /* Carousel specific styles */
 .carousel-container {
   transition: transform 0.3s ease-in-out;
@@ -334,4 +290,82 @@
 .quick-access-badge:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Floating Chart Container - Unified responsive positioning */
+.floating-chart {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: all 0.3s ease-in-out;
+  z-index: 15;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Light mode styling */
+.floating-chart {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Dark mode styling */
+.dark .floating-chart {
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(75, 85, 99, 0.8);
+}
+
+/* Mobile screens */
+@media screen and (max-width: 639px) {
+  .floating-chart {
+    width: calc(100vw - 2rem);
+    height: 40vh;
+    bottom: 5rem;
+    max-width: none;
+  }
+}
+
+/* Small tablets */
+@media (min-width: 640px) and (max-width: 767px) {
+  .floating-chart {
+    width: 85vw;
+    height: 45vh;
+    bottom: 1.5rem;
+    max-width: 500px;
+  }
+}
+
+/* Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .floating-chart {
+    width: 70vw;
+    height: 45vh;
+    bottom: 2rem;
+    max-width: 600px;
+    max-height: 500px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .floating-chart {
+    width: 55vw;
+    height: 40vh;
+    bottom: 2rem;
+    max-width: 700px;
+    max-height: 450px;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .floating-chart {
+    width: 45vw;
+    height: 40vh;
+    bottom: 2rem;
+    max-width: 800px;
+    max-height: 450px;
+  }
 }
