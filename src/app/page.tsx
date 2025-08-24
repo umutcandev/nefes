@@ -53,18 +53,12 @@ export default function Home() {
 
   // İzin durumuna göre dialog görünürlüğünü kontrol et
   useEffect(() => {
-    if (permissionState === 'granted') {
-      setShowPermissionDialog(false);
-    } else if (permissionState === 'prompt' || permissionState === 'denied') {
+    if (permissionState === 'prompt' || permissionState === 'denied') {
       setShowPermissionDialog(true);
-    } else if (permissionState === 'unknown') {
-      // unknown durumunda localStorage'dan veri yüklenmiş mi kontrol et
-      // Eğer koordinatlar varsa modal gösterme
-      if (!latitude || !longitude) {
-        setShowPermissionDialog(true);
-      }
+    } else {
+      setShowPermissionDialog(false);
     }
-  }, [permissionState, latitude, longitude]);
+  }, [permissionState]);
 
   return (
     <div className="h-screen w-screen overflow-hidden relative">
@@ -82,11 +76,16 @@ export default function Home() {
       )}
       
       {/* Floating Chart Container with Carousel */}
-      <div className="floating-chart absolute bottom-0 sm:bottom-4 left-0 sm:left-4 right-0 sm:right-4 h-[50vh] bg-white rounded-2xl shadow-2xl border border-gray-200 z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 dark:border-gray-700">
+      <div className="floating-chart absolute h-[50vh] bg-white rounded-2xl shadow-2xl border border-gray-200 z-10 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 dark:border-gray-700">
         <div className="h-full p-3 md:p-4 flex flex-col">
           {/* Chart header */}
-          <div className="flex-shrink-0 mb-2">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">Hava Kalitesi Verileri</h3>
+          <div className="flex-shrink-0 mb-2 flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Hava Kalitesi Verileri</h3>
+            {loading && (
+              <Badge variant="secondary" className="flex items-center gap-1.5 py-1 px-2">
+                <span className="animate-pulse">Konum yükleniyor</span>
+              </Badge>
+            )}
           </div>
  
           {/* Scrollable content area */}
@@ -98,10 +97,9 @@ export default function Home() {
                   <Badge
                     key={item.id}
                     variant={current === index + 1 ? "default" : "outline"}
-                    className="cursor-pointer transition-all duration-200 hover:scale-105 text-xs px-2.5 py-1"
+                    className="cursor-pointer transition-all duration-200 text-xs px-2.5 py-1"
                     onClick={() => handleTagClick(index)}
                   >
-                    <span className="mr-1">{item.emoji}</span>
                     {item.title}
                   </Badge>
                 ))}

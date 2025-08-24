@@ -12,64 +12,6 @@ interface LocationPermissionState {
   isWatching: boolean;
 }
 
-const STORAGE_KEY = 'nefes_location_permission';
-
-// localStorage'dan veri yükle
-const loadFromStorage = (): Partial<LocationPermissionState> => {
-  if (typeof window === 'undefined') return {};
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const data = JSON.parse(stored);
-      // Sadece belirli alanları yükle ve geçerlilik kontrolü yap
-      if (data.permissionState === 'granted' && data.latitude && data.longitude) {
-        return {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          accuracy: data.accuracy,
-          permissionState: data.permissionState,
-        };
-      }
-    }
-  } catch (error) {
-    console.warn('localStorage verileri yüklenirken hata:', error);
-  }
-  return {};
-};
-
-// localStorage'a veri kaydet
-const saveToStorage = (state: LocationPermissionState) => {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    // Sadece başarılı permission durumunda kaydet
-    if (state.permissionState === 'granted' && state.latitude && state.longitude) {
-      const dataToStore = {
-        latitude: state.latitude,
-        longitude: state.longitude,
-        accuracy: state.accuracy,
-        permissionState: state.permissionState,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
-    }
-  } catch (error) {
-    console.warn('localStorage verileri kaydedilirken hata:', error);
-  }
-};
-
-// localStorage'dan veri sil
-const clearStorage = () => {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.warn('localStorage verileri silinirken hata:', error);
-  }
-};
-
 export const useLocationPermission = () => {
   const [state, setState] = useState<LocationPermissionState>({
     latitude: null,
@@ -81,7 +23,6 @@ export const useLocationPermission = () => {
     isWatching: false,
   });
   
-  const [isHydrated, setIsHydrated] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
 
   // İzin durumunu kontrol et
@@ -109,7 +50,7 @@ export const useLocationPermission = () => {
       const options: PositionOptions = {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 60000, // 1 dakika cache
+        maximumAge: 0, 
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -161,7 +102,6 @@ export const useLocationPermission = () => {
       };
       
       setState(newState);
-      saveToStorage(newState);
       console.log('Canlı konum güncellendi:', newState.latitude, newState.longitude);
     };
 
@@ -219,7 +159,6 @@ export const useLocationPermission = () => {
       const permissionState = await checkPermissionState();
       
       if (permissionState === 'denied') {
-        clearStorage(); // Reddedildiğinde eski verileri temizle
         setState(prev => ({
           ...prev,
           permissionState: 'denied',
@@ -243,17 +182,12 @@ export const useLocationPermission = () => {
       };
       
       setState(newState);
-      saveToStorage(newState);
 
       // İzin verildikten sonra canlı takibi başlat
       startWatching();
 
     } catch (error: unknown) {
       const newPermissionState = await checkPermissionState();
-      // Eğer permission denied ise storage'ı temizle
-      if (newPermissionState === 'denied') {
-        clearStorage();
-      }
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
@@ -263,26 +197,8 @@ export const useLocationPermission = () => {
     }
   }, [startWatching]);
 
-  // Hydration tamamlandığında localStorage'dan veri yükle
-  useEffect(() => {
-    setIsHydrated(true);
-    const storedData = loadFromStorage();
-    
-    if (storedData.permissionState === 'granted' && storedData.latitude && storedData.longitude) {
-      setState(prev => ({
-        ...prev,
-        latitude: storedData.latitude ?? null,
-        longitude: storedData.longitude ?? null,
-        accuracy: storedData.accuracy ?? null,
-        permissionState: storedData.permissionState ?? 'unknown',
-      }));
-    }
-  }, []);
-
   // Sayfa yüklendiğinde izin durumunu kontrol et
   useEffect(() => {
-    if (!isHydrated) return; // Hydration tamamlanana kadar bekle
-    
     const initializePermission = async () => {
       const permissionState = await checkPermissionState();
       
@@ -291,18 +207,18 @@ export const useLocationPermission = () => {
         permissionState,
       }));
 
-      // Eğer izin zaten verilmişse ve localStorage'da veri yoksa otomatik olarak konumu al
-      if (permissionState === 'granted' && !state.latitude) {
+      // Eğer izin zaten verilmişse otomatik olarak konumu al
+      if (permissionState === 'granted') {
         await requestPermission();
       }
     };
 
     initializePermission();
-  }, [isHydrated, state.latitude, requestPermission]);
+  }, [requestPermission]);
 
   // İzin durumu değişikliklerini dinle
   useEffect(() => {
-    if (!isHydrated || !navigator.permissions) return;
+    if (!navigator.permissions) return;
 
     const handlePermissionChange = async () => {
       const newPermissionState = await checkPermissionState();
@@ -333,11 +249,10 @@ export const useLocationPermission = () => {
         permissionStatus.removeEventListener('change', handlePermissionChange);
       }
     };
-  }, [isHydrated, state.latitude, requestPermission]);
+  }, [state.latitude, requestPermission]);
 
   const clearPermissions = () => {
     stopWatching(); // Konum takibini durdur
-    clearStorage();
     setState({
       latitude: null,
       longitude: null,

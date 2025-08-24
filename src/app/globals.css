@@ -273,21 +273,22 @@
 }
 
 /* Floating Chart Container - Responsive sizing */
-@media (max-width: 640px) {
+@media screen and (max-width: 767px) {
   .floating-chart {
-    /* Mobile: Ekranın alt kısmında tam genişlik */
-    height: 55vh !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    /* Mobile: Ekranın alt kısmında, kenarlardan boşluklu */
+    height: 50vh !important;
+    /* Mobil cihazlarda daha fazla alt boşluk - Android navigation bar için */
+    bottom: 5rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    width: calc(100vw - 2rem) !important;
     margin: 0 !important;
     /* Kontrollerin üzerinde ama marker'ların altında */
     z-index: 15 !important;
-    /* Alt köşeleri düz, üst köşeleri yuvarla */
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-top-left-radius: 1.5rem !important;
-    border-top-right-radius: 1.5rem !important;
+    /* Tüm köşeleri yuvarla - artık ekranın kenarlarına yapışmıyor */
+    border-radius: 1.5rem !important;
+    /* Box shadow ile daha belirgin hale getir */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
   }
 }
 
