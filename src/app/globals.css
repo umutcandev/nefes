@@ -63,11 +63,11 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --chart-1: oklch(0.55 0.3 220);
+  --chart-2: oklch(0.45 0.25 300);
+  --chart-3: oklch(0.35 0.15 15);
+  --chart-4: oklch(0.5 0.28 160);
+  --chart-5: oklch(0.4 0.22 40);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.21 0.006 285.885);
@@ -348,24 +348,40 @@
   }
 }
 
-/* Desktop */
+/* Desktop - Sol tarafta büyük */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .floating-chart {
-    width: 55vw;
-    height: 40vh;
-    bottom: 2rem;
-    max-width: 700px;
-    max-height: 450px;
+    width: 450px;
+    height: 70vh;
+    left: 5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    max-width: none;
+    max-height: 80vh;
   }
 }
 
-/* Large desktop */
+/* Large desktop - Sol tarafta büyük */
 @media (min-width: 1280px) {
   .floating-chart {
-    width: 45vw;
-    height: 40vh;
-    bottom: 2rem;
-    max-width: 800px;
-    max-height: 450px;
+    width: 500px;
+    height: 75vh;
+    left: 5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    max-width: none;
+    max-height: 85vh;
   }
+}
+
+/* Hide scrollbar for webkit browsers */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

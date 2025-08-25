@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 interface LocationPermissionState {
   latitude: number | null;
@@ -102,7 +103,7 @@ export const useLocationPermission = () => {
       };
       
       setState(newState);
-      console.log('Canlı konum güncellendi:', newState.latitude, newState.longitude);
+      logger.debug('Canlı konum güncellendi:', newState.latitude, newState.longitude);
     };
 
     const handleError = (error: GeolocationPositionError) => {

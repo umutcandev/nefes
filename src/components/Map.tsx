@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { logger, criticalError } from '@/lib/logger';
 
 interface MapProps {
   longitude?: number;
@@ -33,21 +34,13 @@ export default function Map({
     if (map.current) return; // Harita zaten initialize edilmişse çık
 
     if (!API_KEY || !STYLE_URL) {
-      console.error('Maptiler API anahtarı veya style URL bulunamadı. .env.local dosyasını kontrol edin.');
+      criticalError('Maptiler API anahtarı veya style URL bulunamadı. .env.local dosyasını kontrol edin.');
       return;
     }
 
     if (!mapContainer.current) return;
 
-    // Eğer kullanıcı konumu bekleniyor ama henüz gerçek koordinatlar yoksa, bekle
-    if (showUserLocation && (!longitude || !latitude || longitude === 29.1244)) {
-      return;
-    }
-
-    // Kullanıcı konumu bekleniyorsa ve henüz varsayılan koordinatlardaysa bekle
-    if (showUserLocation && latitude === 40.9128) {
-      return;
-    }
+    // Always initialize map - don't wait for coordinates
 
     // Özel harita style URL'ini kullan
     const styleUrl = STYLE_URL;
@@ -64,12 +57,12 @@ export default function Map({
 
     // Harita yüklendiğinde
     map.current.on('load', () => {
-      console.log('Harita başarıyla yüklendi');
+      logger.log('Harita başarıyla yüklendi');
     });
 
     // Hata durumunda
     map.current.on('error', (e) => {
-      console.error('Harita hatası:', e);
+      criticalError('Harita hatası:', e);
     });
 
     // Navigation controls ekle - mobilde üst alanda konumlandır
@@ -96,7 +89,7 @@ export default function Map({
     geolocateControl.current.on('geolocate', (position: GeolocationPosition) => {
       const { latitude: lat, longitude: lng } = position.coords;
       setCurrentPosition({ lat, lng });
-      console.log('GeolocationControl - Yeni konum:', lat, lng);
+      logger.log('GeolocationControl - Yeni konum:', lat, lng);
       
       // Konum marker'ını ekranın üst yarısında göstermek için haritayı uygun şekilde hizala
       const isMobile = window.innerWidth < 768;
@@ -109,19 +102,26 @@ export default function Map({
           // Merkezi biraz yukarıya kaydır ki marker üst yarıda kalsın
           offset: [0, -window.innerHeight * 0.15]
         });
+      } else {
+        // Desktop'ta normal flyTo
+        map.current?.flyTo({
+          center: [lng, lat],
+          zoom: 16,
+          duration: 2000
+        });
       }
     });
 
     geolocateControl.current.on('trackuserlocationstart', () => {
-      console.log('GeolocationControl - Konum takibi başladı');
+      logger.log('GeolocationControl - Konum takibi başladı');
     });
 
     geolocateControl.current.on('trackuserlocationend', () => {
-      console.log('GeolocationControl - Konum takibi durdu');
+      logger.log('GeolocationControl - Konum takibi durdu');
     });
 
     geolocateControl.current.on('error', (error) => {
-      console.error('GeolocationControl - Hata:', error);
+      criticalError('GeolocationControl - Hata:', error);
     });
 
     // Control'ü haritaya ekle - mobilde üst alanda
@@ -164,7 +164,7 @@ export default function Map({
     // Eğer marker zaten varsa, sadece pozisyonunu güncelle
     if (userLocationMarker.current) {
       userLocationMarker.current.setLngLat([effectivePosition.lng, effectivePosition.lat]);
-      console.log('Marker pozisyonu güncellendi:', effectivePosition.lat, effectivePosition.lng);
+      logger.debug('Marker pozisyonu güncellendi:', effectivePosition.lat, effectivePosition.lng);
     } else {
       // Yeni marker oluştur
       userLocationMarker.current = new maplibregl.Marker({
@@ -173,25 +173,33 @@ export default function Map({
       })
         .setLngLat([effectivePosition.lng, effectivePosition.lat])
         .addTo(map.current);
-      console.log('Yeni marker oluşturuldu:', effectivePosition.lat, effectivePosition.lng);
+      logger.debug('Yeni marker oluşturuldu:', effectivePosition.lat, effectivePosition.lng);
     }
 
-    // İlk konumun ayarlandığını işaretle ve mobilde merkezi ayarla
+    // İlk konumun ayarlandığını işaretle ve merkezi ayarla
     if (!initialLocationSet.current) {
       initialLocationSet.current = true;
       
-      // Mobil cihazlarda marker'ın ekranın üst yarısında görünmesi için harita merkezini ayarla
+      // Harita merkezini kullanıcı konumuna flyTo ile götür
       const isMobile = window.innerWidth < 768;
-      if (isMobile && map.current) {
-        // Haritayı marker'ın üst yarıda kalacağı şekilde ayarla
+      if (map.current) {
         setTimeout(() => {
-          map.current?.flyTo({
-            center: [effectivePosition.lng, effectivePosition.lat],
-            zoom: map.current.getZoom(),
-            duration: 1500,
-            // Merkezi aşağı kaydır ki marker üst yarıda kalsın
-            offset: [0, -window.innerHeight * 0.15]
-          });
+          if (isMobile) {
+            // Mobilde floating box'ın altında kalmaması için offset ile
+            map.current?.flyTo({
+              center: [effectivePosition.lng, effectivePosition.lat],
+              zoom: 16,
+              duration: 1500,
+              offset: [0, -window.innerHeight * 0.15]
+            });
+          } else {
+            // Desktop'ta normal flyTo
+            map.current?.flyTo({
+              center: [effectivePosition.lng, effectivePosition.lat],
+              zoom: 16,
+              duration: 1500
+            });
+          }
         }, 500);
       }
     }
@@ -209,7 +217,7 @@ export default function Map({
           setTimeout(() => {
             map.current?.flyTo({
               center: [currentPosition.lng, currentPosition.lat],
-              zoom: map.current.getZoom(),
+              zoom: 16,
               duration: 1000,
               offset: [0, -window.innerHeight * 0.15]
             });
@@ -219,7 +227,7 @@ export default function Map({
           setTimeout(() => {
             map.current?.flyTo({
               center: [currentPosition.lng, currentPosition.lat],
-              zoom: map.current.getZoom(),
+              zoom: 16,
               duration: 1000,
               offset: [0, 0]
             });
@@ -264,22 +272,7 @@ export default function Map({
     );
   }
 
-  // Kullanıcı konumu beklenirken loading state göster
-  if (showUserLocation && (!longitude || !latitude || longitude === 29.1244 || latitude === 40.9128)) {
-    return (
-      <div className={`relative ${className} flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
-        <div className="text-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Konumunuz alınıyor...
-          </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">
-            Harita konumunuz belirlendikten sonra yüklenecek.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // No loading state for map - show immediately
 
   return (
     <div className={`relative ${className}`}>
