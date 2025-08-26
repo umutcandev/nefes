@@ -4,6 +4,9 @@ import { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { logger, criticalError } from '@/lib/logger';
+import { Info } from 'lucide-react';
+import ReactDOM from 'react-dom/client';
+import InfoDialog from './InfoDialog';
 
 interface MapProps {
   longitude?: number;
@@ -26,6 +29,7 @@ export default function Map({
   const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null);
   const initialLocationSet = useRef(false); // İlk konum ayarlandığında `true` olacak
   const [currentPosition, setCurrentPosition] = useState<{lat: number, lng: number} | null>(null);
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
   const [API_KEY] = useState(process.env.NEXT_PUBLIC_MAPTILER_API_KEY);
   const [STYLE_URL] = useState(process.env.NEXT_PUBLIC_MAPTILER_STYLE_URL);
 
@@ -64,6 +68,44 @@ export default function Map({
     map.current.on('error', (e) => {
       criticalError('Harita hatası:', e);
     });
+
+    // Custom info control
+    class InfoControl implements maplibregl.IControl {
+        _map?: maplibregl.Map;
+        _container: HTMLElement;
+        _root?: ReactDOM.Root;
+
+        constructor() {
+            this._container = document.createElement('div');
+            this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        }
+
+        onAdd = (map: maplibregl.Map) => {
+            this._map = map;
+            this._container.innerHTML = ''; // Clear previous content
+            
+            const button = document.createElement('button');
+            button.className = "w-[30px] h-[30px] bg-white hover:bg-gray-100 text-gray-800 shadow-md grid place-items-center rounded-[6px]";
+            button.onclick = () => setIsInfoDialogOpen(true);
+
+            this._container.appendChild(button);
+
+            this._root = ReactDOM.createRoot(button);
+            this._root.render(<Info className="h-4 w-4" />);
+            
+            return this._container;
+        }
+
+        onRemove = () => {
+            this._root?.unmount();
+            if (this._container.parentNode) {
+                this._container.parentNode.removeChild(this._container);
+            }
+            this._map = undefined;
+        }
+    }
+    
+    map.current.addControl(new InfoControl(), 'top-left');
 
     // Navigation controls ekle - mobilde üst alanda konumlandır
     const navigationControl = new maplibregl.NavigationControl();
@@ -281,6 +323,7 @@ export default function Map({
         className="w-full h-full"
         style={{ minHeight: '400px' }}
       />
+      <InfoDialog isOpen={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen} />
     </div>
   );
 }

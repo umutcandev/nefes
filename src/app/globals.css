@@ -321,7 +321,7 @@
 @media screen and (max-width: 639px) {
   .floating-chart {
     width: calc(100vw - 2rem);
-    height: 40vh;
+    height: 55vh;
     bottom: 5rem;
     max-width: none;
   }
@@ -331,7 +331,7 @@
 @media (min-width: 640px) and (max-width: 767px) {
   .floating-chart {
     width: 85vw;
-    height: 45vh;
+    height: 55vh;
     bottom: 1.5rem;
     max-width: 500px;
   }
@@ -341,7 +341,7 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   .floating-chart {
     width: 70vw;
-    height: 45vh;
+    height: 55vh;
     bottom: 2rem;
     max-width: 600px;
     max-height: 500px;
@@ -374,14 +374,4 @@
     max-width: none;
     max-height: 85vh;
   }
-}
-
-/* Hide scrollbar for webkit browsers */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
 }
