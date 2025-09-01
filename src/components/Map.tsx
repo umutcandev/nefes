@@ -142,7 +142,7 @@ export default function Map({
           zoom: 16,
           duration: 2000,
           // Merkezi biraz yukarıya kaydır ki marker üst yarıda kalsın
-          offset: [0, -window.innerHeight * 0.15]
+          offset: [0, -window.innerHeight * 0.25]
         });
       } else {
         // Desktop'ta normal flyTo
@@ -232,7 +232,7 @@ export default function Map({
               center: [effectivePosition.lng, effectivePosition.lat],
               zoom: 16,
               duration: 1500,
-              offset: [0, -window.innerHeight * 0.15]
+              offset: [0, -window.innerHeight * 0.25]
             });
           } else {
             // Desktop'ta normal flyTo
